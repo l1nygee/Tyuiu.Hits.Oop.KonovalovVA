@@ -1,0 +1,132 @@
+﻿@page "/cart"
+@using Shop.Models
+@using Shop.Services
+@inject IShopService ShopService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Корзина</h3>
+
+@if (!ShopService.GetCartItems().Any())
+{
+    <div class="alert alert-warning">
+        Корзина пуста
+    </div>
+    <a href="/" class="btn btn-secondary">Вернуться к товарам</a>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Товар</th>
+                <th>Цена</th>
+                <th>Количество</th>
+                <th>Сумма</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in ShopService.GetCartItems())
+            {
+                <tr>
+                    <td>@item.Product?.Name</td>
+                    <td>@item.Product?.Price.ToString("C")</td>
+                    <td>@item.Quantity</td>
+                    <td>@((item.Product?.Price * item.Quantity)?.ToString("C"))</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm"
+                                @onclick="() => RemoveFromCart(item.ProductId)">
+                            Удалить
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3"><strong>Итого:</strong></td>
+                <td><strong>@GetTotal().ToString("C")</strong></td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-secondary" @onclick="ClearCart">
+                Очистить корзину
+            </button>
+            <a href="/" class="btn btn-outline-primary">Продолжить покупки</a>
+        </div>
+        <div class="col text-end">
+            <button class="btn btn-success" @onclick="() => ShowOrderForm = true">
+                Оформить заказ
+            </button>
+        </div>
+    </div>
+
+    @if (ShowOrderForm)
+    {
+        <div class="card mt-3">
+            <div class="card-body">
+                <h5 class="card-title">Оформление заказа</h5>
+                <div class="mb-3">
+                    <label class="form-label">Ваше имя</label>
+                    <input type="text" class="form-control" @bind="CustomerName" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Адрес доставки</label>
+                    <textarea class="form-control" rows="3" @bind="Address"></textarea>
+                </div>
+                <button class="btn btn-primary" @onclick="PlaceOrder"
+                        disabled="@(!CanPlaceOrder)">
+                    Подтвердить заказ
+                </button>
+                <button class="btn btn-secondary" @onclick="() => ShowOrderForm = false">
+                    Отмена
+                </button>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private bool ShowOrderForm = false;
+    private string CustomerName = "";
+    private string Address = "";
+
+    private decimal GetTotal()
+    {
+        return ShopService.GetCartItems()
+            .Sum(item => (item.Product?.Price ?? 0) * item.Quantity);
+    }
+
+    private void RemoveFromCart(int productId)
+    {
+        ShopService.RemoveFromCart(productId);
+    }
+
+    private void ClearCart()
+    {
+        ShopService.ClearCart();
+    }
+
+    private void PlaceOrder()
+    {
+        if (!CanPlaceOrder) return;
+
+        var order = new Order
+            {
+                CustomerName = CustomerName,
+                Address = Address
+            };
+
+        ShopService.PlaceOrder(order);
+        Navigation.NavigateTo("/orders");
+    }
+
+    private bool CanPlaceOrder =>
+        !string.IsNullOrWhiteSpace(CustomerName) &&
+        !string.IsNullOrWhiteSpace(Address);
+}

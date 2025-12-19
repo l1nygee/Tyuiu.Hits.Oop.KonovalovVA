@@ -1,0 +1,90 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using Shop.Models
+@using Shop.Services
+@inject IShopService ShopService
+
+<h3>Магазин одежды</h3>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Поиск товаров..."
+                   @bind="searchText" @bind:event="oninput" />
+            <button class="btn btn-outline-secondary" type="button" @onclick="Search">
+                Найти
+            </button>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <select class="form-select" @bind="selectedCategoryId">
+            <option value="0">Все категории</option>
+            @foreach (var category in ShopService.GetCategories())
+            {
+                <option value="@category.Id">@category.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+<div class="row">
+    @foreach (var product in filteredProducts)
+    {
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">@product.Name</h5>
+                    <p class="card-text">@product.Description</p>
+                    <p class="card-text">
+                        <strong>Цена: @product.Price.ToString("C")</strong><br />
+                        <small class="text-muted">@product.Category?.Name</small>
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-sm"
+                            @onclick="() => AddToCart(product)">
+                        В корзину
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (!filteredProducts.Any())
+{
+    <div class="alert alert-info">
+        Товары не найдены
+    </div>
+}
+
+@code {
+    private List<Product> allProducts = new();
+    private List<Product> filteredProducts = new();
+
+    private string searchText = "";
+    private int selectedCategoryId = 0;
+
+    protected override void OnInitialized()
+    {
+        allProducts = ShopService.GetProducts();
+        filteredProducts = allProducts;
+    }
+
+    private void Search()
+    {
+        filteredProducts = allProducts
+            .Where(p =>
+                (string.IsNullOrEmpty(searchText) ||
+                 p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                 p.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase)) &&
+                (selectedCategoryId == 0 || p.CategoryId == selectedCategoryId))
+            .ToList();
+    }
+
+    private void AddToCart(Product product)
+    {
+        ShopService.AddToCart(product);
+        StateHasChanged();
+    }
+}

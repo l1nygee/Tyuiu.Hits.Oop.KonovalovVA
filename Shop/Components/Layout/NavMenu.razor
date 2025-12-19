@@ -1,0 +1,59 @@
+﻿@using Shop.Services
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Shop</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <a class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Главная
+            </a>
+        </div>
+        <div class="nav-item px-3">
+            <a class="nav-link" href="cart">
+                <span class="oi oi-cart" aria-hidden="true"></span> Корзина
+                @if (cartItemCount > 0)
+                {
+                    <span class="badge bg-danger">@cartItemCount</span>
+                }
+            </a>
+        </div>
+        <div class="nav-item px-3">
+            <a class="nav-link" href="orders">
+                <span class="oi oi-list" aria-hidden="true"></span> Заказы
+            </a>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+    private int cartItemCount = 0;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    [Inject] private IShopService ShopService { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        UpdateCartCount();
+    }
+
+    private void UpdateCartCount()
+    {
+        cartItemCount = ShopService.GetCartItems().Sum(item => item.Quantity);
+    }
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+        UpdateCartCount();
+        StateHasChanged();
+    }
+}
