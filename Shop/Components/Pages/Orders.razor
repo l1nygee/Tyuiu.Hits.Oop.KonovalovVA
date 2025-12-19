@@ -1,0 +1,45 @@
+﻿@page "/orders"
+@using Shop.Models
+@using Shop.Services
+@inject IShopService ShopService
+@rendermode InteractiveServer
+
+<h3>История заказов</h3>
+
+@if (!ShopService.GetOrderHistory().Any())
+{
+    <div class="alert alert-info">
+        У вас еще нет заказов
+    </div>
+    <a href="/" class="btn btn-primary">Начать покупки</a>
+}
+else
+{
+    @foreach (var order in ShopService.GetOrderHistory())
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                Заказ #@order.Id от @order.OrderDate.ToString("dd.MM.yyyy HH:mm")
+            </div>
+            <div class="card-body">
+                <p><strong>Имя:</strong> @order.CustomerName</p>
+                <p><strong>Адрес:</strong> @order.Address</p>
+
+                <h6>Товары:</h6>
+                <ul>
+                    @foreach (var item in order.Items)
+                    {
+                        <li>
+                            @item.Product?.Name - @item.Quantity шт. ×
+                            @item.Product?.Price.ToString("C") =
+                            @((item.Product?.Price * item.Quantity)?.ToString("C"))
+                        </li>
+                    }
+                </ul>
+                <p class="text-end">
+                    <strong>Итого: @order.TotalPrice.ToString("C")</strong>
+                </p>
+            </div>
+        </div>
+    }
+}
